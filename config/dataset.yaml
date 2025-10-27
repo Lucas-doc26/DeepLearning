@@ -1,0 +1,73 @@
+# configs/dataset_config.yaml
+
+datasets:
+
+  csv_dir: "/home/lucas/DeepLearning/CSV/"
+  download_dir: "/home/lucas/DeepLearning/datasets/"
+
+  kyoto:
+    name: "kyoto"
+    description: "Natural scenes dataset"
+    type: "image"
+    format: "jpg"
+    color_mode: "rgb"
+    normalization: "0-1"  
+    augmentations:
+      - salt_and_pepper
+      - transform_1
+      - transform_2
+      - transform_3
+    split:
+      train: 0.7
+      val: 0.2
+      test: 0.1
+    shuffle: true
+    paths:
+      raw: "/home/lucas/DeepLearning/datasets/kyoto/"
+      processed: "/home/lucas/DeepLearning/datasets/kyoto/"
+      csv: "/home/lucas/DeepLearning/CSV/kyoto"
+
+  PKLot:
+    name: "PKLot"
+    description: "Parking lot dataset"
+    classes: [empty, occupied]
+    type: "image"
+    format: "jpg"
+    color_mode: "rgb"
+    normalization: "0-1"  
+    split_subjects: [PUC, UFPR04, UFPR5]
+    paths:
+      raw: "/home/lucas/DeepLearning/datasets/PKLot/"
+      processed: "/home/lucas/DeepLearning/datasets/PKLot/"
+      csv: "/home/lucas/DeepLearning/CSV/PKLot"
+    link_download: "http://www.inf.ufpr.br/vri/databases/PKLot.tar.gz"
+
+  CNR:
+    name: "CNR"
+    description: "Parking lot dataset"
+    classes: [empty, occupied] 
+    type: "image"
+    format: "jpg"
+    color_mode: "rgb"
+    normalization: "0-1"  
+    split_subjects: [camera1, camera2, camera3, camera4, camera5, camera6, camera7, camera8, camera9]
+    paths:
+      raw: "/home/lucas/DeepLearning/datasets/CNR/"
+      processed: "/home/lucas/DeepLearning/datasets/CNR/"
+      csv: "/home/lucas/DeepLearning/CSV/CNR"
+    link_download: "https://github.com/fabiocarrara/deep-parking/releases/download/archive/CNR-EXT-Patches-150x150.zip"
+
+  ASVSPOOF:
+    name: "ASVSPOOF"
+    description: "ASV spoofing dataset"
+    classes: [empty, occupied]
+    type: "image"
+    format: "jpg"
+    color_mode: "rgb"
+    normalization: "0-1"  
+    split_subjects: []
+    paths:
+      raw: "/home/lucas/DeepLearning/datasets/ASVSPOOF/"
+      processed: "/home/lucas/DeepLearning/datasets/ASVSPOOF/"
+      csv: "/home/lucas/DeepLearning/CSV/ASVSPOOF"
+    link_download: ""

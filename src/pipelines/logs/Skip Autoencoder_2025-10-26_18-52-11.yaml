@@ -1,0 +1,17 @@
+Autoencoder_type:
+  name: Skip Autoencoder
+  input_shape:
+  - 128
+  - 128
+  - 3
+  latent_dim: 64
+  optimizer: Adam
+  loss_function: Mean Squared Error
+  metrics:
+  - accuracy
+  train_autoencoder:
+    batch_size: 32
+    base: CNR
+    epochs: 1
+    metrics_image: 0.4496800899505615
+  notes: ''

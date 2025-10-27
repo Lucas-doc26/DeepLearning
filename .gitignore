@@ -3,4 +3,11 @@
 /datasets/CNR
 /datasets/ASVSPOOF
 /datasets/PKLot
-/
+/images
+/CSV
+
+*.keras
+*.weigths.h5
+*.h5
+*/__pycache__
+*.pyc

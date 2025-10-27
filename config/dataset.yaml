@@ -2,7 +2,7 @@
 
 datasets:
   csv_dir: "/home/c.oliveira25/Desktop/DeepLearning/CSV/"
-  download_dir: "/home/c.oliveira25/Desktop/DeepLearning/datasets/"
+  download_dir: "/datasets"
 
   kyoto:
     name: "kyoto"

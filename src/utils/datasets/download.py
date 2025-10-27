@@ -75,7 +75,7 @@ def download_datasets(url, path_download, path_dest):
     print("Arquivo compactado removido.")
 
 if __name__ == "__main__":
-    with open('/home/lucas/DeepLearning/config/dataset.yaml', 'r') as file:
+    with open('/home/c.oliveira25/Desktop/DeepLearning/config/dataset.yaml', 'r') as file:
         data = yaml.safe_load(file)
 
     for dataset in data['datasets']:

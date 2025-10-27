@@ -1,9 +1,8 @@
 # configs/dataset_config.yaml
 
 datasets:
-
-  csv_dir: "/home/lucas/DeepLearning/CSV/"
-  download_dir: "/home/lucas/DeepLearning/datasets/"
+  csv_dir: "/home/c.oliveira25/Desktop/DeepLearning/CSV/"
+  download_dir: "/home/c.oliveira25/Desktop/DeepLearning/datasets/"
 
   kyoto:
     name: "kyoto"

@@ -50,7 +50,7 @@ class BaseDataset:
                     df.to_csv(os.path.join(self.csv_dir, f'{label}.csv'), index=False)
 
 def create_datasets_from_yaml():                                                                                        
-    yaml_data = yaml.safe_load(open('/home/lucas/DeepLearning/config/dataset.yaml', 'r'))
+    yaml_data = yaml.safe_load(open('/home/c.oliveira25/Desktop/DeepLearning/config/dataset.yaml', 'r'))
     download = yaml_data['datasets'].get('download_dir')
     csv_dir = yaml_data['datasets'].get('csv_dir')
     dataset = DatasetManager(dataset_path=str(download), csv_dir=str(csv_dir))

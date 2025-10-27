@@ -16,17 +16,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model = SkipAutoencoderSVM(
-        '/home/lucas/DeepLearning/models/skip_autoencoder/skip_autoencoder.keras',
-        f'/home/lucas/DeepLearning/models/skip_autoencoder/weights/skip_autoencoder-{args.skip}.weights.h5'
+        '/home/c.oliveira25/Desktop/DeepLearning/models/skip_autoencoder/skip_autoencoder.keras',
+        f'/home/c.oliveira25/Desktop/DeepLearning/models/skip_autoencoder/weights/skip_autoencoder-{args.skip}.weights.h5'
     )   
 
-    df_train = pd.read_csv(f'/home/lucas/DeepLearning/CSV/{args.train}.csv')
+    df_train = pd.read_csv(f'/home/c.oliveira25/Desktop/DeepLearning/CSV/{args.train}.csv')
     train_ds = preprocess_dataset(df_train[:1000], batch_size=32, autoencoder=False)
 
     for x_batch, y_batch in dataset_generator(train_ds):
         model.train(x_batch, y_batch)
 
-    df_test = pd.read_csv(f'/home/lucas/DeepLearning/CSV/{args.test}.csv')
+    df_test = pd.read_csv(f'/home/c.oliveira25/Desktop/DeepLearning/CSV/{args.test}.csv')
     test_ds = preprocess_dataset(df_test[:1000], batch_size=32, autoencoder=False)
 
     preds = []

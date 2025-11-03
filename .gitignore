@@ -5,9 +5,11 @@
 /datasets/PKLot
 /images
 /CSV
+/models
 
 *.keras
 *.weigths.h5
 *.h5
 */__pycache__
 *.pyc
+

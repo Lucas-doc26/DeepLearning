@@ -10,8 +10,11 @@ from sklearn.manifold import TSNE
 from utils.image_metrics import calculate_ssim
    
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import numpy as np
 import os
+import pathlib
+from pathlib import Path
 
 def plot_autoencoder_with_ssim(dataset, autoencoder, width=128, height=128, save_path=None):
 
@@ -56,7 +59,6 @@ def plot_autoencoder_with_ssim(dataset, autoencoder, width=128, height=128, save
         plt.close()
     else:
         plt.show()
-
 
 def plot_history(history, type='Classifier', save_fig=None):
     # Função auxiliar pra evitar erro com chave inexistente

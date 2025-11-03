@@ -7,11 +7,11 @@ import tensorflow as tf
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from utils import *
-from models import SkipAutoencoder, save_autoencoder_log
+from models import VariationalAutoencoder, save_autoencoder_log
 
 if __name__ == "__main__":  
     import argparse
-    parser = argparse.ArgumentParser(description='Train a Skip Autoencoder.')
+    parser = argparse.ArgumentParser(description='Train a Variational Autoencoder.')
     parser.add_argument('--train', type=str,default='CNR', help='Dataset do skip.')
     parser.add_argument('--epochs', type=int, default=1, help='Número de épocas para o treinamento.')
     args = parser.parse_args()
@@ -25,19 +25,16 @@ if __name__ == "__main__":
     df_test = pd.read_csv(f'/home/lucas/DeepLearning/CSV/{args.train}/{args.train}_test.csv')
     test = preprocess_dataset(df_test[:32], batch_size=32, autoencoder=True)
 
-
     print(len(train), len(valid), len(test))
 
-    model = SkipAutoencoder()
+    model = VariationalAutoencoder(latent_dim=128)
     model.compile(optimizer='adam', loss='mse')
     history = model.fit(train, epochs=args.epochs, validation_data=valid, batch_size=32)
-    model.save_model('/home/lucas/DeepLearning/models/skip_autoencoder/', 'skip_autoencoder')
-    model.save_weights('/home/lucas/DeepLearning/models/skip_autoencoder/weights', 'skip_autoencoder', f'{args.train}') 
-    encoder = model.encoder
-    encoder.save_weights(f'/home/lucas/DeepLearning/models/skip_autoencoder/weights/skip_autoencoder_encoder-{args.train}.weights.h5')
+    model.save_model('/home/lucas/DeepLearning/models/variational_autoencoder/', 'variational_autoencoder')
+    model.save_weights('/home/lucas/DeepLearning/models/variational_autoencoder/weights', 'variational_autoencoder', f'{args.train}') 
 
     plot_autoencoder_with_ssim(test, model,
-                               save_path=f'/home/lucas/DeepLearning/models/skip_autoencoder/plots/autoencoder_reconstruction/skip_autoencoder_{args.train}.png')
+                               save_path=f'/home/lucas/DeepLearning/models/variational_autoencoder/plots/autoencoder_reconstruction/variational_autoencoder_{args.train}.png')
     
 
     pred = model.predict(test)
@@ -52,7 +49,7 @@ if __name__ == "__main__":
     }
 
     save_autoencoder_log(
-        log_dir='/home/lucas/DeepLearning/models/skip_autoencoder/logs',
+        log_dir='/home/lucas/DeepLearning/models/variational_autoencoder/logs',
         model_name="Skip Autoencoder",
         input_shape=(128, 128, 3),
         latent_dim=128,

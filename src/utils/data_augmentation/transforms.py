@@ -58,3 +58,17 @@ def apply_gaussian_noise(img, mean=0.0, std=0.1):
 def apply_channel_shuffle(img):
     channel_shuffle = A.ChannelShuffle(p=1)
     return albumentations_tf(img, channel_shuffle)
+
+def randon_rain():
+    return A.Compose([
+            A.RandomRain(
+                drop_length=8, drop_width=1,
+                drop_color=(180, 180, 180),  blur_value=5,brightness_coefficient=0.8, p=0.15
+            ),
+            A.GaussNoise(var_limit=(0.0, 0.0007), mean=0, p=0.15),
+            A.ChannelShuffle(p=0.15),
+            A.Rotate(limit=40, p=0.15),
+            A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2,brightness_by_max=True, p=0.15),
+            A.AdvancedBlur(blur_limit=(7,9), noise_limit=(0.75, 1.25), p=0.15),
+            #A.Resize(height=256, width=256)
+    ])

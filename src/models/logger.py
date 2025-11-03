@@ -35,3 +35,35 @@ def save_autoencoder_log(
         yaml.dump(log_data, f, sort_keys=False)
 
     print(f"✅ Log salvo em: {file_path}")
+
+def classifier_log(
+    log_dir:str,
+    model_name: str,
+    input_shape:int,
+    autoencoder_description: int,
+    optimizer: str,
+    loss_fn: str,
+    train_info: dict,
+    notes: str = ""):
+
+    os.makedirs(log_dir, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    file_path = os.path.join(log_dir, f"{model_name}_{timestamp}.yaml")
+
+    log_data = {
+        "Autoencoder_type": {
+            "name": model_name,
+            "input_shape": input_shape,
+            "autoencoder_description": autoencoder_description,
+            "optimizer": optimizer,
+            "loss_function": loss_fn,
+            "train_autoencoder": train_info,
+            "notes": notes
+        }
+    }
+
+    with open(file_path, "w") as f:
+        yaml.dump(log_data, f, sort_keys=False)
+
+    print(f"✅ Log salvo em: {file_path}")

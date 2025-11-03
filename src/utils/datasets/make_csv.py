@@ -49,6 +49,13 @@ class BaseDataset:
                         label = 'CNR'
                     df.to_csv(os.path.join(self.csv_dir, f'{label}.csv'), index=False)
 
+def create_kyoto():
+    yaml_data = yaml.safe_load(open('/home/lucas/DeepLearning/config/dataset.yaml', 'r'))
+    kyoto = yaml_data['datasets']['kyoto']
+    kyoto_ds = BaseDataset(kyoto)
+    kyoto_ds.to_csv()
+    print("Deu certo!")
+
 def create_datasets_from_yaml():                                                                                        
     yaml_data = yaml.safe_load(open('/home/c.oliveira25/Desktop/DeepLearning/config/dataset.yaml', 'r'))
     download = yaml_data['datasets'].get('download_dir')

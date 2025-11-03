@@ -1,8 +1,8 @@
 import tensorflow as tf
 import keras
 from keras import layers
-
-
+import os
+from tensorflow.keras.models import Model
 
 #No VariationalAutoencoder, ele gera dois vetores latentes: 
 # z_mean = média gaussiana latente
@@ -14,13 +14,13 @@ class Sampling(layers.Layer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.seed_generator = keras.random.SeedGenerator(1337)
+        self.seed_generator = tf.random.Generator.from_seed(1337)
 
     def call(self, inputs):
         z_mean, z_log_var = inputs
         batch = tf.shape(z_mean)[0]
         dim = tf.shape(z_mean)[1]
-        epsilon = keras.random.normal(shape=(batch, dim), seed=self.seed_generator) # rúido
+        epsilon = self.seed_generator.normal(shape=(batch, dim)) # rúido
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon #reparametrização(determinística + diferenciável) -> backpropagation mesmo usando amostragem
     
 @keras.saving.register_keras_serializable()
@@ -39,6 +39,7 @@ class VariationalAutoencoder(keras.Model):
             name="reconstruction_loss"
         )
         self.kl_loss_tracker = keras.metrics.Mean(name="kl_loss")
+        self.autoencoder = self.build_autoencoder()
 
     def return_encoder(self):
         return self.encoder
@@ -72,6 +73,12 @@ class VariationalAutoencoder(keras.Model):
 
         return decoder
 
+    def build_autoencoder(self):
+        inputs = self.img_input
+        z_mean, z_log_var, z = self.encoder(inputs)
+        outputs = self.decoder(z)
+        model = Model(inputs, outputs, name="autoencoder")
+        return model
 
     def call(self, inputs):
         z_mean, z_log_var, z = self.encoder(inputs)
@@ -161,13 +168,22 @@ class VariationalAutoencoder(keras.Model):
             "kl_loss": self.kl_loss_tracker.result(),
         }
     
-    def load(self, model_path, model_weights):
+    def load(self, model_path, model_weights=None):
         model = tf.keras.models.load_model(
             model_path,
-            custom_objects={"VariationalAutoencoder": VariationalAutoencoder, "Sampling": Sampling},
+            custom_objects={"VariationalAutoencoder": VariationalAutoencoder, "Sampling": Sampling}
         )
-        model.load_weights(model_weights)
+        if model_weights is not None:
+            model.load_weights(model_weights)
         return model
+
+    def save_model(self, path, name):
+        os.makedirs(path, exist_ok=True)
+        self.autoencoder.save(os.path.join(path, f'{name}.keras'))
+
+    def save_weights(self, path, name, train):
+        os.makedirs(path, exist_ok=True)
+        self.autoencoder.save_weights(os.path.join(path, f'{name}-{train}.weights.h5'))
     
 
     

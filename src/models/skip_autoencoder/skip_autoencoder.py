@@ -29,23 +29,29 @@ class SkipAutoencoder(keras.Model):
         e2 = Conv2D(64, (3, 3), activation='relu', padding='same')(p1)
         p2 = MaxPooling2D((2, 2))(e2)
 
-        latent = Conv2D(self.latent_dim, (3, 3), activation='relu', padding='same')(p2)
+        x = Conv2D(self.latent_dim, (3, 3), activation='relu', padding='same')(p2)
+        x = tf.keras.layers.Flatten()(x)
+        latent = tf.keras.layers.Dense(self.latent_dim, activation='relu')(x)
 
         encoder = keras.Model(inputs, [latent, e1, e2], name='encoder')
         return encoder
 
     def build_decoder(self):
-        latent_in = Input(shape=(32, 32, self.latent_dim))
+        latent_in = Input(shape=(self.latent_dim,))
         e1_in = Input(shape=(128, 128, 32))
         e2_in = Input(shape=(64, 64, 64))
 
-        d1 = Conv2DTranspose(64, (3, 3), strides=2, padding='same', activation='relu')(latent_in)
+        x = tf.keras.layers.Dense(32 * 32 * 128, activation='relu')(latent_in)
+        x = tf.keras.layers.Reshape((32, 32, 128))(x)
+
+        d1 = Conv2DTranspose(64, (3, 3), strides=2, padding='same', activation='relu')(x)
         d1 = Concatenate()([d1, e2_in])
 
         d2 = Conv2DTranspose(32, (3, 3), strides=2, padding='same', activation='relu')(d1)
         d2 = Concatenate()([d2, e1_in])
 
         outputs = Conv2D(3, (3, 3), activation='sigmoid', padding='same')(d2)
+
         decoder = keras.Model([latent_in, e1_in, e2_in], outputs, name='decoder')
         return decoder
 

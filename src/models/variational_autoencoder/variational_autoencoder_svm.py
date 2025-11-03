@@ -1,27 +1,27 @@
 from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
 
-from .skip_autoencoder import SkipAutoencoder
+from .variational_autoencoder import VariationalAutoencoder
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 
-class SkipAutoencoderSVM():
+class VariationalAutoencoderSVM():
     def __init__(self, model_path, model_weights):
         self.encoder = self.load_encoder(model_path, model_weights)                                                                          
         self.svm = None
 
     def load_encoder(self, model_path, model_weights):
-        skip = SkipAutoencoder()
-        skip.load(model_path=model_path)
-        self.encoder = skip.return_encoder()
+        vae = VariationalAutoencoder()
+        vae.load(model_path=model_path)
+        self.encoder = vae.return_encoder()
         self.encoder.load_weights(model_weights, skip_mismatch=True)
-        del skip
+        del vae
         return self.encoder                                 
 
     def train(self, x, y):
-        pred, _, _ = self.encoder.predict(x)
+        _, _, z = self.encoder.predict(x)
         pipe = Pipeline([
             ('scaler', StandardScaler()),
             ('svm', SVC(kernel='rbf'))
@@ -33,7 +33,7 @@ class SkipAutoencoderSVM():
         }
 
         grid = GridSearchCV(pipe, param_grid, cv=5, scoring='accuracy')
-        grid.fit(pred, y)
+        grid.fit(z, y)
 
         print("Melhores parâmetros:", grid.best_params_)
         print("Melhor score CV:", grid.best_score_)
@@ -42,6 +42,6 @@ class SkipAutoencoderSVM():
         self.svm = grid.best_estimator_
 
     def test(self, x):
-        pred, _, _ = self.encoder.predict(x)
-        y_pred = self.svm.predict(pred)
+        _, _, z = self.encoder.predict(x)
+        y_pred = self.svm.predict(z)
         return y_pred

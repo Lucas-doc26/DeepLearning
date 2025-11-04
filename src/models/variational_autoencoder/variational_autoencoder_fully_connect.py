@@ -1,41 +1,40 @@
 import tensorflow as tf
 import keras
-from .variational_autoencoder import VariationalAutoencoder as VAE
+from .variational_autoencoder import VariationalAutoencoder
 
 @keras.saving.register_keras_serializable()
 class VariationalAutoencoderFullyConnected(keras.Model):
-    def __init__(self, **kwargs):
+    def __init__(self, model_path, model_weights, **kwargs):
         super().__init__(**kwargs)
-        self.VariationalAutoencoderFullyConnected = None
+        self.encoder = self.load_encoder(model_path, model_weights)
+        self.model = self.create_model()
 
-    def create(self, encoder, freeze:bool=True):
-        if encoder != None:
-            if freeze:
-                for layer in encoder.layers:
-                    layer.trainable = False
-                encoder.trainable = False
-
-            encoder_output = encoder.output[2]  # [z_mean, z_log_var, z]
-            encoder_input = encoder.input
-            encoder_model = tf.keras.Model(encoder_input, encoder_output, name="encoder_for_VariationalAutoencoderFullyConnected")
-
-            #crio o classificador com o enconder
-            self.VariationalAutoencoderFullyConnected = tf.keras.models.Sequential([
+    def load_encoder(self, model_path, model_weights):
+        skip = VariationalAutoencoder()
+        skip.load(model_path=model_path)
+        self.encoder = skip.return_encoder()
+        self.encoder.load_weights(model_weights, skip_mismatch=True)
+        del skip
+        return self.encoder
+    
+    def create_model(self):
+        print(self.encoder.output)
+        encoder_outputs = self.encoder.output[-1] #z_mean, z_log, z
+        encoder_model = tf.keras.models.Model(self.encoder.input, encoder_outputs)
+        for layer in encoder_model.layers:
+            layer.treinable = False
+        encoder_model.trainable = False
+        self.model = tf.keras.models.Sequential([
                     encoder_model,  
                     tf.keras.layers.Dropout(0.2),  
+                    tf.keras.layers.BatchNormalization(),
                     tf.keras.layers.Dense(256, activation='relu'),
                     tf.keras.layers.Dense(128,activation='relu'),  
                     tf.keras.layers.Dense(2, activation='softmax')  
-                ], name=f'VariationalAutoencoderFullyConnected-{encoder.name}')
-
-            self.VariationalAutoencoderFullyConnected.summary()
-            return self.VariationalAutoencoderFullyConnected
+                ], name=f'VariationalAutoencoderFullyConnected')
+        
+        self.model.summary()
+        return self.model
     
-    def load(self, model_path, model_weights):
-        model = tf.keras.models.load_model(
-            model_path,
-            custom_objects={"VariationalAutoencoderFullyConnected": VariationalAutoencoderFullyConnected},
-        )
-        model.load_weights(model_weights)
-        return model
-    
+    def call(self, x, training=False):
+        return self.model(x, training=training)

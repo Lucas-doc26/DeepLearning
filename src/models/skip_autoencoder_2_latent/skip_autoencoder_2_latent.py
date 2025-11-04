@@ -19,7 +19,7 @@ class SkipAutoencoder2Latent(tf.keras.Model):
         self.latent_comum = 100
         self.encoder = None
         self.decoder = None
-        self.autoencoder = self.build_autoencoder()
+        self.model = self.build_autoencoder()
 
     def build_encoder(self):
         inputs = self.input_img
@@ -45,7 +45,6 @@ class SkipAutoencoder2Latent(tf.keras.Model):
 
     def build_decoder(self):
         latent_in = Input(shape=(self.latent_dim,))
-        latent_comum_in = Input(shape=(self.latent_comum,))
         e1_in = Input(shape=(128, 128, 32))
         e2_in = Input(shape=(64, 64, 64))
 
@@ -53,14 +52,8 @@ class SkipAutoencoder2Latent(tf.keras.Model):
         x = Dense(32*32*128, activation='relu')(latent_in)
         x = Reshape((32, 32, 128))(x)
 
-        x_comum = Dense(32*32*128, activation='relu')(latent_comum_in)
-        x_comum = Reshape((32, 32, 128))(x_comum)
-
-        # Combina latents
-        x_combined = Concatenate()([x, x_comum])  # shape (32, 32, 256)
-
         # Decoder com skip connections
-        d1 = Conv2DTranspose(64, (3, 3), strides=2, padding='same', activation='relu')(x_combined)
+        d1 = Conv2DTranspose(64, (3, 3), strides=2, padding='same', activation='relu')(x)
         d1 = Concatenate()([d1, e2_in])
 
         d2 = Conv2DTranspose(32, (3, 3), strides=2, padding='same', activation='relu')(d1)
@@ -68,7 +61,7 @@ class SkipAutoencoder2Latent(tf.keras.Model):
 
         outputs = Conv2D(3, (3, 3), activation='sigmoid', padding='same')(d2)
 
-        decoder = Model([latent_in, latent_comum_in, e1_in, e2_in], outputs, name='decoder')
+        decoder = Model([latent_in, e1_in, e2_in], outputs, name='decoder')
         decoder.summary()
         return decoder
 
@@ -78,11 +71,16 @@ class SkipAutoencoder2Latent(tf.keras.Model):
 
         inputs = self.input_img
         latent, latent_comum, e1, e2 = self.encoder(inputs)
-        outputs = self.decoder([latent, latent_comum, e1, e2])
+        outputs = self.decoder([latent, e1, e2])
         model = Model(inputs, outputs, name="autoencoder")
+        model.summary()
         return model
 
     def call(self, inputs):
         latent, latent_comum, e1, e2 = self.encoder(inputs)
-        out = self.decoder([latent, latent_comum, e1, e2])
+        out = self.decoder([latent, e1, e2])
         return out
+
+    def compile(self, optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'], **kwargs):
+        super().compile(**kwargs)
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)

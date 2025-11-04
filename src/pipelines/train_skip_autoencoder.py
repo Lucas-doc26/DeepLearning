@@ -34,7 +34,7 @@ if __name__ == "__main__":
     model.save_model('/home/lucas/DeepLearning/models/skip_autoencoder/', 'skip_autoencoder')
     model.save_weights('/home/lucas/DeepLearning/models/skip_autoencoder/weights', 'skip_autoencoder', f'{args.train}') 
     encoder = model.encoder
-    encoder.save_weights(f'/home/lucas/DeepLearning/models/skip_autoencoder/weights/skip_autoencoder_encoder-{args.train}.weights.h5')
+    encoder.save_weights(f'/home/lucas/DeepLearning/models/skip_autoencoder/weights/skip_autoencoder-encoder-{args.train}.weights.h5')
 
     plot_autoencoder_with_ssim(test, model,
                                save_path=f'/home/lucas/DeepLearning/models/skip_autoencoder/plots/autoencoder_reconstruction/skip_autoencoder_{args.train}.png')

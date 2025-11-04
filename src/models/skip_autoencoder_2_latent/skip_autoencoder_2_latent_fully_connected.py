@@ -6,12 +6,11 @@ import os
 from sklearn.decomposition import PCA
 
 
-# Certifique-se de que SkipAutoencoder está no mesmo pacote
-from .skip_autoencoder import SkipAutoencoder
+from .skip_autoencoder_2_latent import SkipAutoencoder2Latent
 
 
 @keras.saving.register_keras_serializable()
-class SkipAutoencoderFullyConnected(keras.Model):
+class SkipAutoencoder2LatentFullyConnected(keras.Model):
     def __init__(self, encoder_model_path, encoder_weights_path=None, **kwargs):
         super().__init__(**kwargs)
         self.skip = self.load_skip_autoencoder(encoder_model_path, encoder_weights_path)
@@ -20,7 +19,7 @@ class SkipAutoencoderFullyConnected(keras.Model):
     def load_skip_autoencoder(self, encoder_model_path, encoder_weights_path):
         skip = tf.keras.models.load_model(
             encoder_model_path,
-            custom_objects={"SkipAutoencoder": SkipAutoencoder}
+            custom_objects={"SkipAutoencoder2Latent": SkipAutoencoder2Latent}
         )
         encoder = skip.get_layer('encoder')  # pega a camada encoder do autoencoder
         if encoder_weights_path:

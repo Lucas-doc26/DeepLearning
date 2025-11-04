@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-from models import SkipAutoencoderFullyConnected, classifier_log
+from models import SkipAutoencoderFullyConnected2, classifier_log
 from utils import preprocess_dataset, salt_and_pepper, plot_confusion_matrix, create_kyoto, randon_rain
 import random
 import time
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     parser.add_argument('--labels', nargs='+' ,default=['Vazio', 'Ocupado'], help='Labels de classificação')
     args = parser.parse_args()
 
-    model = SkipAutoencoderFullyConnected('/home/lucas/DeepLearning/models/skip_autoencoder/skip_autoencoder.keras',
+    model = SkipAutoencoderFullyConnected2('/home/lucas/DeepLearning/models/skip_autoencoder/skip_autoencoder.keras',
             f'/home/lucas/DeepLearning/models/skip_autoencoder/weights/skip_autoencoder-encoder-{args.autoencoder}.weights.h5')
     
     model.model.compile(
@@ -54,29 +54,30 @@ if __name__ == "__main__":
     )
 
     model_checkpoint = ModelCheckpoint(
-        filepath='/home/lucas/DeepLearning/models/skip_autoencoder/weights/best_fc_model.h5',
+        filepath='/home/lucas/DeepLearning/models/skip_autoencoder2/weights/best_fc_model.h5',
         monitor='val_accuracy',    # ou 'val_accuracy'
         save_best_only=True
     )
+    os.makedirs('/home/lucas/DeepLearning/models/skip_autoencoder2/',exist_ok=True )
 
     inicial = time.time()
-    model.model.fit(train, epochs=args.epochs, validation_data=valid, batch_size=32, callbacks=[early_stop, reduce_lr, model_checkpoint])
+    model.train_model(train, valid, args.epochs, callbacks=[model_checkpoint, reduce_lr, early_stop])
     final = time.time()
 
-    model.model.save('/home/lucas/DeepLearning/models/skip_autoencoder/skip_autoencoder_fully_connected.keras')
-    model.model.save_weights(f'/home/lucas/DeepLearning/models/skip_autoencoder/weights/skip_autoencoder_fully_connected-{args.train}.weights.h5')
+    model.model.save('/home/lucas/DeepLearning/models/skip_autoencoder2/skip_autoencoder2_fully_connected.keras')
+    model.model.save_weights(f'/home/lucas/DeepLearning/models/skip_autoencoder2/weights/skip_autoencoder2_fully_connected-{args.train}.weights.h5')
 
     results = []
     for dataset_test in args.test:
         df_test = pd.read_csv(f'/home/lucas/DeepLearning/CSV/{dataset_test}/{dataset_test}_test.csv')
-        test = preprocess_dataset(df_test, batch_size=32, autoencoder=False)
+        test = preprocess_dataset(df_test[:1000], batch_size=32, autoencoder=False)
 
 
-        preds = model.predict(test)
-        y_true = df_test['class'].values
+        preds = model.test_model(test)
+        y_true = df_test['class'][:1000].values
         y_pred = preds.argmax(axis=1)
 
-        cm_path = f'/home/lucas/DeepLearning/models/skip_autoencoder/plots/confusion_matrix/{args.autoencoder}/{args.train}/FC/{args.autoencoder}-{args.train}-{dataset_test}.png'
+        cm_path = f'/home/lucas/DeepLearning/models/skip_autoencoder2/plots/confusion_matrix/{args.autoencoder}/{args.train}/FC/{args.autoencoder}-{args.train}-{dataset_test}.png'
         plot_confusion_matrix(y_true, y_pred, labels=args.labels,
                             legend=f"Autoencoder: {args.autoencoder} - Treino: {args.train} x Teste:{dataset_test}",
                             save_path=cm_path)
@@ -88,8 +89,8 @@ if __name__ == "__main__":
         f1 = f1_score(y_true, y_pred)
         results.append([{"Accuracy": accuracy}, {"Precision":precision}, {"Recall":recall}, {"F1":f1}])
 
-    log_dir = f'/home/lucas/DeepLearning/models/skip_autoencoder/logs'
-    classifier_log(log_dir=log_dir, model_name=f'skip_autoencoder_fully_connected-{args.train}', 
+    log_dir = f'/home/lucas/DeepLearning/models/skip_autoencoder2/logs'
+    classifier_log(log_dir=log_dir, model_name=f'skip_autoencoder2_fully_connected-{args.train}', 
                     input_shape=128, autoencoder_description=128,
                     optimizer='adam', loss_fn='sparse_categorical_crossentropy',
                     train_info={"Train": args.train,

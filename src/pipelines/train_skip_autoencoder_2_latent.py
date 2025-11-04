@@ -26,14 +26,14 @@ if __name__ == ("__main__"):
     test = preprocess_dataset(df_test[:32], batch_size=32, autoencoder=False)
 
     print(len(train), len(valid), len(test))
+    print(type(train), type(valid), type(test))
 
     model = SkipAutoencoder2Latent()
-    model.compile(optimizer='adam', loss='mse')
-    history = model.fit(train, epochs=args.epochs, validation_data=valid, batch_size=32)
-    #model.save_model('/home/lucas/DeepLearning/models/skip_autoencoder/', 'skip_autoencoder')
-    #model.save_weights('/home/lucas/DeepLearning/models/skip_autoencoder/weights', 'skip_autoencoder', f'{args.train}')
+    model.model.compile(optimizer='adam', loss='mse')
+    history = model.model.fit(train, epochs=args.epochs, validation_data=valid, batch_size=32)
+    model.save_model('/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/', 'skip_autoencoder_2_latent')
+    model.save_weights('/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/weights', 'skip_autoencoder_2_latent', f'{args.train}')
 
-    pred = model.predict(test) 
-    plt.plot()
-    plt.imshow(pred[0])
-    plt.show()
+    plot_autoencoder_with_ssim(test, model,
+                               save_path=f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/plots/autoencoder_reconstruction/skip_autoencoder_2_latent_{args.train}.png')
+    

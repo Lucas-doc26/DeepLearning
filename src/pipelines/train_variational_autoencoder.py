@@ -33,6 +33,8 @@ if __name__ == "__main__":
     model.save_model('/home/lucas/DeepLearning/models/variational_autoencoder/', 'variational_autoencoder')
     model.save_weights('/home/lucas/DeepLearning/models/variational_autoencoder/weights', 'variational_autoencoder', f'{args.train}') 
 
+    encoder = model.encoder
+    encoder.save_weights('/home/lucas/DeepLearning/models/variational_autoencoder/weights', 'variational_autoencoder', f'{args.train}') 
     plot_autoencoder_with_ssim(test, model,
                                save_path=f'/home/lucas/DeepLearning/models/variational_autoencoder/plots/autoencoder_reconstruction/variational_autoencoder_{args.train}.png')
     

@@ -81,6 +81,10 @@ class SkipAutoencoder2Latent(tf.keras.Model):
         out = self.decoder([latent, e1, e2])
         return out
 
-    def compile(self, optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'], **kwargs):
+    def model_compile(self, optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'], **kwargs):
         super().compile(**kwargs)
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+    def model_fit(self, train, epochs, valid):
+        history = self.model.fit(train, epochs=epochs, validation_data=valid, batch_size=32)
+        return history

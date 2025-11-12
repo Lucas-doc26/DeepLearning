@@ -1,6 +1,8 @@
 import tensorflow as tf
 import keras
-from .variational_autoencoder import VariationalAutoencoder
+from .variational_autoencoder import VariationalAutoencoder, Sampling
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization, Input
+from tensorflow.keras.models import Model, Sequential
 
 @keras.saving.register_keras_serializable()
 class VariationalAutoencoderFullyConnected(keras.Model):
@@ -18,11 +20,7 @@ class VariationalAutoencoderFullyConnected(keras.Model):
         return self.encoder
     
     def create_model(self):
-        print(self.encoder.output)
-        encoder_outputs = self.encoder.output[-1] #z_mean, z_log, z
-        encoder_model = tf.keras.models.Model(self.encoder.input, encoder_outputs)
-        for layer in encoder_model.layers:
-            layer.treinable = False
+        
         encoder_model.trainable = False
         self.model = tf.keras.models.Sequential([
                     encoder_model,  
@@ -38,3 +36,70 @@ class VariationalAutoencoderFullyConnected(keras.Model):
     
     def call(self, x, training=False):
         return self.model(x, training=training)
+
+@keras.saving.register_keras_serializable()
+class VariationalAutoencoderFullyConnected(keras.Model):
+    def __init__(self, encoder_model_path, encoder_weights_path=None, **kwargs):
+        super().__init__(**kwargs)
+        self.vae = self.load_vae_autoencoder(encoder_model_path, encoder_weights_path)
+        self.model = self.build_model()
+
+    def load_vae_autoencoder(self, encoder_model_path, encoder_weights_path):
+        vae = tf.keras.models.load_model(
+            encoder_model_path,
+            custom_objects={"VariationalAutoencoder": VariationalAutoencoder, "Sampling": Sampling}
+        )
+        encoder = vae.get_layer('encoder')  # pega a camada encoder do autoencoder
+        if encoder_weights_path:
+            encoder.load_weights(encoder_weights_path)
+        
+        encoder_model = Model(
+            inputs=encoder.input,
+            outputs=encoder.output[0],
+            name='encoder_model'
+        )
+
+        encoder_model.summary()
+        return encoder_model
+    
+    def build_model(self):
+        model = Sequential([
+            Input(shape=(128,)),
+            BatchNormalization(),
+            Dropout(0.2),
+            Dense(256, activation='relu'),
+            Dense(128, activation='relu'),
+            Dense(2, activation='softmax') 
+        ], name='VariationalAutoencoderFullyConnected')
+        
+        model.summary()
+        model.compile()
+        return model
+
+    def train_model(self, train, valid, epochs=10, callbacks=[]):
+        train_encoded = train.map(self.encode_batch)
+        valid_encoded = valid.map(self.encode_batch)
+
+        history = self.model.fit(
+            train_encoded,
+            validation_data=valid_encoded,
+            epochs=epochs,
+            callbacks=callbacks
+        )
+        return history
+
+    
+    def test_model(self, data):
+        z = data.map(self.encode_batch)
+        return self.model.predict(z)
+
+    def call(self, x, training=False):
+        return self.model(x, training=training)
+
+    def compile(self, optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'], **kwargs):
+        super().compile(**kwargs)
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+    def encode_batch(self, x, y):
+        z = self.vae(x, training=False)
+        return z, y

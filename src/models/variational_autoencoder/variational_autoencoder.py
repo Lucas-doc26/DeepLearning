@@ -25,7 +25,7 @@ class Sampling(layers.Layer):
     
 @keras.saving.register_keras_serializable()
 class VariationalAutoencoder(keras.Model):
-    def __init__(self, latent_dim:int = 256, input_shape:int = (128,128,3), **kwargs):
+    def __init__(self, latent_dim:int = 128, input_shape:int = (128,128,3), **kwargs):
         super().__init__(**kwargs)
         self.img_input = keras.Input(shape=input_shape)
         self.latent_dim = latent_dim

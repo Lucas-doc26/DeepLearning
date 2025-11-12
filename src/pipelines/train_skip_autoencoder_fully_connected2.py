@@ -35,7 +35,7 @@ if __name__ == "__main__":
     )
 
     df_train = pd.read_csv(f'/home/lucas/DeepLearning/CSV/{args.train}/{args.train}_train.csv')
-    train = preprocess_dataset(df_train, batch_size=32, autoencoder=False, transform=randon_rain())
+    train = preprocess_dataset(df_train, batch_size=32, autoencoder=False, transform=salt_and_pepper())
 
     df_valid = pd.read_csv(f'/home/lucas/DeepLearning/CSV/{args.train}/{args.train}_valid.csv')
     valid = preprocess_dataset(df_valid, batch_size=32, autoencoder=False)
@@ -70,11 +70,11 @@ if __name__ == "__main__":
     results = []
     for dataset_test in args.test:
         df_test = pd.read_csv(f'/home/lucas/DeepLearning/CSV/{dataset_test}/{dataset_test}_test.csv')
-        test = preprocess_dataset(df_test[:1000], batch_size=32, autoencoder=False)
+        test = preprocess_dataset(df_test, batch_size=32, autoencoder=False)
 
 
         preds = model.test_model(test)
-        y_true = df_test['class'][:1000].values
+        y_true = df_test['class'].values
         y_pred = preds.argmax(axis=1)
 
         cm_path = f'/home/lucas/DeepLearning/models/skip_autoencoder2/plots/confusion_matrix/{args.autoencoder}/{args.train}/FC/{args.autoencoder}-{args.train}-{dataset_test}.png'
@@ -93,7 +93,8 @@ if __name__ == "__main__":
     classifier_log(log_dir=log_dir, model_name=f'skip_autoencoder2_fully_connected-{args.train}', 
                     input_shape=128, autoencoder_description=128,
                     optimizer='adam', loss_fn='sparse_categorical_crossentropy',
-                    train_info={"Train": args.train,
+                    train_info={"Infos": args.autoencoder
+                                ,"Train": args.train,
                                 "Time to train": final - inicial,
                                 "Epochs":args.epochs,
                                 "Test": {dataset: result for dataset, result in zip(args.test, results)}}

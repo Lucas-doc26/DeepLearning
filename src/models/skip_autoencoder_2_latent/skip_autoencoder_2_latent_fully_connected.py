@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization, Input
 from tensorflow.keras.models import Model, Sequential
 import os
 from sklearn.decomposition import PCA
@@ -27,7 +27,7 @@ class SkipAutoencoder2LatentFullyConnected(keras.Model):
         
         encoder_model = Model(
             inputs=encoder.input,
-            outputs=encoder.output[0],
+            outputs=encoder.output[1],
             name='encoder_model'
         )
 
@@ -41,7 +41,7 @@ class SkipAutoencoder2LatentFullyConnected(keras.Model):
             layer.trainable = False
 
         model = Sequential([
-            self.skip,
+            Input(shape=(100,)),
             BatchNormalization(),
             Dropout(0.2),
             Dense(256, activation='relu'),
@@ -53,6 +53,21 @@ class SkipAutoencoder2LatentFullyConnected(keras.Model):
         model.compile()
         return model
     
+    def train_model(self, train, valid, epochs, callbacks):
+        train_encoded = train.map(self.encode_batch)
+        valid_encoded = valid.map(self.encode_batch)
+
+        history = self.model.fit(
+            train_encoded,
+            validation_data=valid_encoded,
+            epochs=epochs,
+            callbacks=callbacks
+        )
+        return history
+    
+    def test_model(self, data):
+        z = data.map(self.encode_batch)
+        return self.model.predict(z)
 
     def call(self, x, training=False):
         return self.model(x, training=training)
@@ -60,3 +75,8 @@ class SkipAutoencoder2LatentFullyConnected(keras.Model):
     def compile(self, optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'], **kwargs):
         super().compile(**kwargs)
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+    def encode_batch(self, x, y):
+        print(self.skip.outputs)
+        z = self.skip(x, training=False)
+        return z, y

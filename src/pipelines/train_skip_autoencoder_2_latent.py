@@ -23,16 +23,21 @@ if __name__ == ("__main__"):
     valid = preprocess_dataset(df_valid, batch_size=32, autoencoder=True)
 
     df_test = pd.read_csv(f'/home/lucas/DeepLearning/CSV/{args.train}/{args.train}_test.csv')
-    test = preprocess_dataset(df_test[:32], batch_size=32, autoencoder=False)
+    test = preprocess_dataset(df_test[:32], batch_size=32, autoencoder=True)
 
     print(len(train), len(valid), len(test))
     print(type(train), type(valid), type(test))
 
-    model = SkipAutoencoder2Latent()
-    model.model.compile(optimizer='adam', loss='mse')
-    history = model.model.fit(train, epochs=args.epochs, validation_data=valid, batch_size=32)
-    model.save_model('/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/', 'skip_autoencoder_2_latent')
-    model.save_weights('/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/weights', 'skip_autoencoder_2_latent', f'{args.train}')
+    model_base = SkipAutoencoder2Latent()
+    model = model_base.model
+    model.compile(optimizer='adam', loss='mse')
+    history = model.fit(train, epochs=args.epochs, validation_data=valid)
+
+    os.makedirs('/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/weights', exist_ok=True)
+    model.save('/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/skip_autoencoder_2_latent.keras')
+    model.save_weights(f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/weights/skip_autoencoder_2_latent-{args.train}.weights.h5')
+    encoder = model_base.encoder 
+    encoder.save_weights(f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/weights/skip_autoencoder_2_latent-encoder-{args.train}.weights.h5')
 
     plot_autoencoder_with_ssim(test, model,
                                save_path=f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/plots/autoencoder_reconstruction/skip_autoencoder_2_latent_{args.train}.png')

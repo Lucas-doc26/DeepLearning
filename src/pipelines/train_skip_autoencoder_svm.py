@@ -65,7 +65,8 @@ if __name__ == "__main__":
     classifier_log(log_dir=log_dir, model_name=f'skip_autoencoder_SVM-{args.train}', 
                     input_shape=128, autoencoder_description=128,
                     optimizer='adam', loss_fn='sparse_categorical_crossentropy',
-                    train_info={"Train": args.train,
+                    train_info={"Base Autoencoder":args.autoencoder,
+                                "Train": args.train,
                                 "Time to train": final - inicial,
                                 "Epochs":args.epochs,
                                 "Test": {dataset: result for dataset, result in zip(args.test, results)}}

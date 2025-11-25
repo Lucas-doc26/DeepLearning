@@ -14,20 +14,21 @@ def preprocess_image_tf(path, label, img_size=(128,128), autoencoder=False):
 
     return img, label
 
-def preprocess_dataset(df, batch_size, autoencoder=True, img_size=(128,128), transform=None, prob=0.7):
+def preprocess_dataset(df, batch_size, autoencoder=True, img_size=(128,128), transform=None, prob=0.4):
     labels = df['class'].values if not autoencoder else df['path_image'].values
 
     #transforma em tensores
     dataset = tf.data.Dataset.from_tensor_slices((df['path_image'].values, labels))
 
     def _process_transform(x, y):
-        img, label = preprocess_image_tf(x, y, img_size, autoencoder)
-        if transform:
-            img = albumentations_tf(img, transform, prob)
+        with tf.device('/CPU:0'):
+            img, label = preprocess_image_tf(x, y, img_size, autoencoder)
+            if transform:
+                img = albumentations_tf(img, transform, prob)
         return img, label
 
-    dataset = dataset.map(_process_transform, num_parallel_calls=tf.data.AUTOTUNE)    
-    dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    dataset = dataset.map(_process_transform, num_parallel_calls=1)    
+    dataset = dataset.batch(batch_size).prefetch(1)
     return dataset
 
 def dataset_generator(dataset: tf.data.Dataset) -> np.ndarray:

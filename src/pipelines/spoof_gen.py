@@ -36,8 +36,8 @@ def make_csv(dataset, num_per_class, save):
     print(df_balanced['class'].value_counts())
 
 
-make_csv('train', 512, 'train')
-make_csv('val', 32, 'valid')
+make_csv('train', 5000, 'train')
+make_csv('val', 2500, 'valid')
 
 test = pd.read_csv("/home/lucas/DeepLearning/CSV/Spoof/test.txt", sep=" ", names=['path_image', 'class'])
 

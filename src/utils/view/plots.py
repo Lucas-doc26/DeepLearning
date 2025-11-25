@@ -16,6 +16,10 @@ import os
 import pathlib
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
+plt.close('all')
+
 def plot_autoencoder_with_ssim(dataset, autoencoder, width=128, height=128, save_path=None):
 
     #converte em um batch
@@ -59,6 +63,9 @@ def plot_autoencoder_with_ssim(dataset, autoencoder, width=128, height=128, save
         plt.close()
     else:
         plt.show()
+    
+    plt.close('all')
+
 
 def plot_history(history, type='Classifier', save_fig=None):
     # Função auxiliar pra evitar erro com chave inexistente

@@ -3,6 +3,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pandas as pd
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
@@ -18,15 +19,16 @@ random.seed(42)
 if __name__ == "__main__":  
     import argparse
     parser = argparse.ArgumentParser(description='Train a Skip Autoencoder SVM model.')
-    parser.add_argument('--autoencoder', type=str,default='CNR', help='Dataset do skip.')
+    parser.add_argument('--autoencoder', type=str,default='kyoto', help='Dataset do skip.')
     parser.add_argument('--train', type=str,default='UFPR05', help='Dataset do skip.')
     parser.add_argument('--test', nargs='+', default=['PUC'], help='Dataset do skip.')
     parser.add_argument('--epochs', type=int, default=10, help='Número de épocas para o treinamento.')
     parser.add_argument('--labels', nargs='+' ,default=['Vazio', 'Ocupado'], help='Labels de classificação')
+    parser.add_argument('--id', type=int, default=1)
     args = parser.parse_args()
 
-    model = SkipAutoencoder2LatentFullyConnected('/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/skip_autoencoder_2_latent.keras',
-            f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/weights/skip_autoencoder_2_latent-encoder-{args.autoencoder}.weights.h5')
+    model = SkipAutoencoder2LatentFullyConnected(f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/skip_autoencoder_2_latent-id-{args.id}.keras',
+            f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/weights/skip_autoencoder_2_latent-id-{args.id}-encoder-{args.autoencoder}.weights.h5')
     
     model.model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
@@ -64,8 +66,8 @@ if __name__ == "__main__":
     model.train_model(train, valid, args.epochs, callbacks=[early_stop, reduce_lr, model_checkpoint])
     final = time.time()
 
-    model.model.save('/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/skip_autoencoder_2_latent_fully_connected.keras')
-    model.model.save_weights(f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/weights/skip_autoencoder_2_latent_fully_connected-{args.train}.weights.h5')
+    model.model.save(f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/skip_autoencoder_2-id-{args.id}_latent_fully_connected.keras')
+    model.model.save_weights(f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/weights/skip_autoencoder_2-id-{args.id}_latent_fully_connected-{args.train}.weights.h5')
 
     results = []
     for dataset_test in args.test:
@@ -77,20 +79,23 @@ if __name__ == "__main__":
         y_true = df_test['class'].values
         y_pred = preds.argmax(axis=1)
 
-        cm_path = f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/plots/confusion_matrix/{args.autoencoder}/{args.train}/FC/{args.autoencoder}-{args.train}-{dataset_test}.png'
+        cm_path = f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/plots/confusion_matrix/{args.autoencoder}-id-{args.id}/{args.train}/FC/{args.autoencoder}-{args.train}-{dataset_test}.png'
         plot_confusion_matrix(y_true, y_pred, labels=args.labels,
                             legend=f"Autoencoder: {args.autoencoder} - Treino: {args.train} x Teste:{dataset_test}",
                             save_path=cm_path)
-        
 
+        dir = '/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/preds/'
+        os.makedirs(dir, exist_ok=True)
+        file=os.path.join(dir, f'preds-{args.autoencoder}-id-{args.id}-{args.train}-{dataset_test}.npy')
+        np.save(file, y_pred)        
         accuracy = accuracy_score(y_true, y_pred)
         precision = precision_score(y_true, y_pred)
         recall = recall_score(y_true, y_pred)
         f1 = f1_score(y_true, y_pred)
         results.append([{"Accuracy": accuracy}, {"Precision":precision}, {"Recall":recall}, {"F1":f1}])
 
-    log_dir = f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent/logs'
-    classifier_log(log_dir=log_dir, model_name=f'skip_autoencoder_2_latent_fully_connected-{args.train}', 
+    log_dir = f'/home/lucas/DeepLearning/models/skip_autoencoder_2_latent-id-{args.id}/logs'
+    classifier_log(log_dir=log_dir, model_name=f'skip_autoencoder_2_latent_fully_connected-id-{args.id}-{args.train}', 
                     input_shape=128, autoencoder_description=128,
                     optimizer='adam', loss_fn='sparse_categorical_crossentropy',
                     train_info={"Base autoencoder": args.autoencoder

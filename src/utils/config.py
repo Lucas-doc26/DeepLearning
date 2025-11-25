@@ -76,10 +76,12 @@ def config_tensorflow():
         print("Continuando com precisão padrão...")
 
 def clear_session():
+    print("Limpando Sessão!")
     keras.backend.clear_session()  
     gc.collect()
     if tf.config.list_physical_devices('GPU'):
         tf.config.experimental.reset_memory_stats('GPU:0') #limpa memória da gpu
+
 
 # Executa as configurações ao importar o módulo
 set_seeds()

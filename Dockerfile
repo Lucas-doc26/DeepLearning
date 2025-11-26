@@ -1,23 +1,24 @@
-FROM docker.io/tensorflow/tensorflow:2.15.0-gpu
+FROM nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        software-properties-common \
-        python3.10 python3.10-venv python3.10-distutils \
-        build-essential git wget curl nano sudo libgl1 \
-        libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev libffi-dev \
-        libglib2.0-0 libsm6 libxext6 libxrender-dev\
-    && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /home/lucas/DeepLearning
+WORKDIR /workspace
 
 COPY requirements.txt .
 
-RUN python3.10 -m venv /opt/venv \
-    && /opt/venv/bin/pip install --upgrade pip setuptools wheel \
-    && /opt/venv/bin/pip install -r requirements.txt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      python3.10 python3.10-dev python3-pip python3.10-venv \
+      build-essential git wget curl && \
+    rm -rf /var/lib/apt/lists/*
 
-ENV PATH="/opt/venv/bin:$PATH"
+# Atualiza pip
+RUN python3.10 -m pip install --upgrade pip setuptools wheel
 
-CMD ["bash"]
+# Instala TensorFlow GPU 2.15
+RUN python3.10 -m pip install --no-cache-dir -r requirements.txt
+
+WORKDIR /workspace
+CMD ["/bin/bash"]
+

@@ -4,155 +4,136 @@ from tensorflow.keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D
 from tensorflow.keras.models import Model
 import random
 import os
+import numpy as np
 
-@tf.keras.utils.register_keras_serializable()
-class SkipAutoencoderGen(tf.keras.Model):
-    def __init__(self, id=1, latent_dim_space = (128, 256), **kwargs):
-        super().__init__(*kwargs)
-        self.input_img = Input(shape=(128, 128, 3))
-        self.rng = random.Random(id) #cria um gerador para cada autoencoder -> assim posso passar um id e garantir que sempre dê o msm valor no espaço_latente
-        self.id = id
-        self.latent_dim = self.rng.randint(latent_dim_space[0], latent_dim_space[1])
-        self.latent_comum = 100
+
+class SkipAutoencoderGenerator:
+    """
+    Gerador pseudoaleatório de autoencoders com skip-connections.
+    Estrutura sempre espelhada: Encoder -> Latent -> Decoder com skips simétricos.
+    """
+
+    def __init__(self, input_shape=(128,128,3), min_layers=2, max_layers=4,
+                 filters_list=[8,16,32,64,128], model_name=None):
+        
+        self.input_shape = input_shape
+        self.min_layers = min_layers
+        self.max_layers = max_layers
+        self.filters_list = filters_list
+
         self.encoder = None
         self.decoder = None
-        self.model = self.build_autoencoder()
+        self.autoencoder = None
+        self.model_name = model_name
 
-    def build_encoder(self):
-        inputs = self.input_img
-        e1 = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
-        p1 = MaxPooling2D((2, 2))(e1)
+    def set_model_name(self, name):
+        self.model_name = name
 
+    # -------------------------------------------------------------------------
+    # 1) CALCULAR E GERAR CONFIGURAÇÃO ALEATÓRIA
+    # -------------------------------------------------------------------------
+    def calculate_layers(self):
+        num_layers = np.random.randint(self.min_layers, self.max_layers + 1)
 
+        filters_used = []
+        skip_shapes = []
+        pool_flags = []
 
-        e2 = Conv2D(64, (3, 3), activation='relu', padding='same')(p1)
+        current_shape = self.input_shape
 
-        p2 = MaxPooling2D((2, 2))(e2)
+        # Encoder specs
+        for i in range(num_layers):
+            f = np.random.choice(self.filters_list)
+            filters_used.append(f)
 
+            do_pool = np.random.choice([0,1,1])   # pool mais provável
+            if current_shape[0] <= 4 or current_shape[1] <= 4:
+                do_pool = 0   # impede divisão absurda
+            
+            pool_flags.append(do_pool)
+            
+            # salva a forma para skip
+            skip_shapes.append(current_shape)
 
+            if do_pool == 1:
+                current_shape = (current_shape[0]//2, current_shape[1]//2, f)
+            else:
+                current_shape = (current_shape[0], current_shape[1], f)
 
-        # Latent individual
+        latent_dim = np.random.randint(128, 256)
 
-        x = Conv2D(self.latent_dim, (3, 3), activation='relu', padding='same')(p2)
+        return num_layers, filters_used, pool_flags, skip_shapes, current_shape, latent_dim
 
-        x = Flatten()(x)
+    # -------------------------------------------------------------------------
+    # 2) CONSTRUÇÃO DO ENCODER
+    # -------------------------------------------------------------------------
+    def build_encoder(self, num_layers, filters_used, pool_flags):
+        inputs = Input(shape=self.input_shape)
 
-        latent = Dense(self.latent_dim, activation='relu')(x)
+        x = inputs
+        skips = []
 
+        for i in range(num_layers):
+            x = Conv2D(filters_used[i], (3,3), activation='relu', padding='same')(x)
+            skips.append(x)
 
+            if pool_flags[i] == 1:
+                x = MaxPooling2D((2,2), padding='same')(x)
 
-        # Latent comum
+        flat = Flatten()(x)
+        latent = Dense(filters_used[-1], activation='relu')(flat)
 
-        x_comum = Conv2D(self.latent_comum, (3, 3), activation='relu', padding='same')(p2)
-
-        x_comum = Flatten()(x_comum)
-
-        latent_comum = Dense(self.latent_comum, activation='relu')(x_comum)
-
-
-
-        encoder = Model(inputs, [latent, latent_comum, e1, e2], name='encoder')
-
-        encoder.summary()
-
+        encoder = Model(inputs, [latent] + skips, name="encoder")
         return encoder
 
+    # -------------------------------------------------------------------------
+    # 3) CONSTRUÇÃO DO DECODER (espelhado com skip obrigatório)
+    # -------------------------------------------------------------------------
+    def build_decoder(self, num_layers, filters_used, pool_flags, final_shape, latent_dim):
+        
+        latent_input = Input(shape=(filters_used[-1],))
+        skip_inputs = [Input(shape=final_shape) for _ in range(num_layers)]
 
+        # Dense → reshape inicial
+        x = Dense(np.prod(final_shape), activation='relu')(latent_input)
+        x = Reshape(final_shape)(x)
 
-    def build_decoder(self):
+        # Decoder espelhado
+        for i in range(num_layers-1, -1, -1):
+            x = Concatenate()([x, skip_inputs[i]])
 
-        latent_in = Input(shape=(self.latent_dim,))
+            stride = 2 if pool_flags[i] == 1 else 1
+            x = Conv2DTranspose(filters_used[i], (3,3), strides=stride,
+                                padding='same', activation='relu')(x)
 
-        e1_in = Input(shape=(128, 128, 32))
+        out = Conv2D(self.input_shape[2], (3,3), padding='same',
+                     activation='sigmoid')(x)
 
-        e2_in = Input(shape=(64, 64, 64))
-
-
-
-        # Expande latents para shape espacial
-
-        x = Dense(32*32*128, activation='relu')(latent_in)
-
-        x = Reshape((32, 32, 128))(x)
-
-
-
-        # Decoder com skip connections
-
-        d1 = Conv2DTranspose(64, (3, 3), strides=2, padding='same', activation='relu')(x)
-
-        d1 = Concatenate()([d1, e2_in])
-
-
-
-        d2 = Conv2DTranspose(32, (3, 3), strides=2, padding='same', activation='relu')(d1)
-
-        d2 = Concatenate()([d2, e1_in])
-
-
-
-        outputs = Conv2D(3, (3, 3), activation='sigmoid', padding='same')(d2)
-
-
-
-        decoder = Model([latent_in, e1_in, e2_in], outputs, name='decoder')
-
-        decoder.summary()
-
+        decoder = Model([latent_input] + skip_inputs, out, name="decoder")
         return decoder
 
+    # -------------------------------------------------------------------------
+    # 4) BUILD COMPLETO
+    # -------------------------------------------------------------------------
+    def build_model(self, save=False):
+        (num_layers, filters_used, pool_flags, skip_shapes,
+         final_shape, latent_dim) = self.calculate_layers()
 
+        # encoder
+        self.encoder = self.build_encoder(num_layers, filters_used, pool_flags)
 
-    def build_autoencoder(self):
+        # decoder
+        self.decoder = self.build_decoder(num_layers, filters_used,
+                                          pool_flags, final_shape, latent_dim)
 
-        self.encoder = self.build_encoder()
+        # full AE
+        inp = Input(shape=self.input_shape)
+        latent_and_skips = self.encoder(inp)
+        latent = latent_and_skips[0]
+        skips  = latent_and_skips[1:]
 
-        self.decoder = self.build_decoder()
+        decoded = self.decoder([latent] + skips)
+        self.autoencoder = Model(inp, decoded, name=self.model_name)
 
+        return self.autoencoder
 
-
-        inputs = self.inpu
-
-    def model_compile(self, optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'], **kwargs):
-
-        super().compile(**kwargs)
-
-        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-
-    
-
-    def load(self, model_path, model_weights=None):
-
-        model = tf.keras.models.load_model(
-
-            model_path,
-
-            custom_objects={"SkipAutoencoder2Latent": SkipAutoencoder2Latent}
-
-        )
-
-        if model_weights is not None:
-
-            model.load_weights(model_weights)
-
-        return model
-
-
-
-    def save_model(self, path, name):
-
-        os.makedirs(path, exist_ok=True)
-
-        self.model.save(os.path.join(path, f'{name}-{self.id}.keras'))
-
-        self.encoder.save(os.path.join(path, f'{name}-{self.id}-encoder.keras'))
-
-
-
-    def save_weights(self, path, name, train):
-
-        os.makedirs(path, exist_ok=True)
-
-        self.model.save_weights(os.path.join(path, f'{name}-{self.id}-{train}.weights.h5'))
-
-        self.encoder.save_weights(os.path.join(path, f'{name}-{self.id}-{train}-encoder.keras'))
